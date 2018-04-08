@@ -1,0 +1,17 @@
+
+version: '2.2'
+services:
+  awstest:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: awstest
+    ports:
+      - 8080
+    networks:
+      - network1
+    scale: 1
+
+networks:
+  network1:
+  
