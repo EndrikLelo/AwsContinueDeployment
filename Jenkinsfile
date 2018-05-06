@@ -1,33 +1,37 @@
-using hostname.
+pipeline {
+  agent any
 
-[code language="java"]
-node {
+  tools {
+    maven 'mvn-3.5.2'
+  }
 
-    withMaven(maven:'maven') {
-
-        stage('Checkout') {
-            git url: 'https://github.com/DonaldLika/AwsContinueDeployment.git', credentialsId: 'github-DonaldLika', branch: 'master'
-        }
-
-        stage('Build') {
-            sh 'mvn clean install'
-
-            def pom = readMavenPom file:'pom.xml'
-            print pom.version
-            env.version = pom.version
-        }
-
-        stage('Image') {
-            dir ('AwsContinueDeployment') {
-                def app = docker.build "localhost:5000/AwsCDeploymentTest:${env.version}"
-                app.push()
-            }
-        }      
-
-        stage ('Final') {
-            build job: 'AwsCDeploymentTest-pipeline', wait: false
-        }      
-
+  stages {
+    stage('Build') {
+      steps {
+        sh 'mvn package'
+      }
     }
+    
+    stage('Make Container') {
+      steps {
+      sh "docker build -t donaldlika/awstest:${env.BUILD_ID} ."
+      sh "docker tag donaldlika/awstest:${env.BUILD_ID} donaldlika/awstest:latest"
+      }
+    }
+    
+  }
 
+  post {
+    always {
+      archive 'target/**/*.jar'
+      junit 'target/**/*.xml'
+    }
+    success {
+      withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'donaldlika', passwordVariable: 'imthebest4ever')]) {
+        sh "docker login -u ${USERNAME} -p ${PASSWORD}"
+        sh "docker push donaldlika/awstest:${env.BUILD_ID}"
+        sh "docker push donaldlika/awstest:latest"
+      }
+    }
+  }
 }
