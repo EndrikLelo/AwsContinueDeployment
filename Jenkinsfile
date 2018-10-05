@@ -12,6 +12,12 @@ pipeline {
       }
     }
     
+    stage('Test') {
+      steps {
+        sh 'mvn -Dtest=AwsCDeploymentTestApplicationTests test'
+      }
+    }
+    
     stage('Make Container') {
       steps {
       sh "docker build -t donaldlika/awstest:${env.BUILD_ID} ."
